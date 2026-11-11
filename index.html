@@ -1,0 +1,597 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fahrzeit">
+<meta name="theme-color" content="#0a0d12">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Fahrzeit</title>
+<style>
+  :root{
+    --bg:#0a0d12; --card:#141a23; --card2:#1b2330; --line:#252f3e;
+    --text:#f4f6f9; --muted:#8b96a8;
+    --green:#22c55e; --red:#ef4444;
+    --blue:#3b82f6; --blue-soft:rgba(59,130,246,.16);
+    --amber:#f59e0b; --amber-soft:rgba(245,158,11,.16);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--text)}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+    -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
+    overscroll-behavior-y:none;
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
+  .wrap{max-width:560px;margin:0 auto;padding:0 18px}
+
+  /* ---------- Hero (driving screen) ---------- */
+  .hero{
+    min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    padding:calc(env(safe-area-inset-top) + 14px) 0 22px;gap:14px;
+  }
+  .top{width:100%;display:flex;align-items:center;justify-content:space-between}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:-.2px}
+  .brand img{width:30px;height:30px;border-radius:8px}
+  .live{display:none;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--red)}
+  .live i{width:10px;height:10px;border-radius:50%;background:var(--red);animation:blink 1.4s infinite}
+  .running .live{display:flex}
+  @keyframes blink{50%{opacity:.25}}
+
+  .clock{text-align:center}
+  .timer{
+    font-size:clamp(76px,24vw,124px);font-weight:700;letter-spacing:-3px;line-height:1;
+    font-variant-numeric:tabular-nums;color:#fff;
+  }
+  .timer.long{font-size:clamp(60px,18vw,100px)}
+  .status{margin-top:10px;font-size:18px;color:var(--muted);font-weight:500;min-height:24px}
+
+  .route{
+    width:100%;min-height:68px;border-radius:20px;padding:0 20px;
+    display:flex;align-items:center;justify-content:center;gap:12px;
+    font-size:21px;font-weight:700;background:var(--card);border:2px dashed var(--line);color:var(--muted);
+    visibility:hidden;
+  }
+  .running .route{visibility:visible}
+  .route svg{width:28px;height:28px;flex:none}
+  .route.yes{background:var(--blue-soft);border:2px solid var(--blue);color:#cfe0ff}
+  .route.no{background:var(--amber-soft);border:2px solid var(--amber);color:#ffe7b8}
+
+  .main{
+    position:relative;width:min(72vw,300px);aspect-ratio:1;border-radius:50%;color:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    background:radial-gradient(circle at 35% 28%,#5ee08f,#16a34a 72%);
+    box-shadow:0 24px 70px -12px rgba(34,197,94,.6), inset 0 -10px 24px rgba(0,0,0,.22), inset 0 6px 14px rgba(255,255,255,.18);
+    transition:transform .12s ease, box-shadow .3s ease;
+  }
+  .main:active{transform:scale(.95)}
+  .running .main{
+    background:radial-gradient(circle at 35% 28%,#ff8a8a,#dc2626 72%);
+    box-shadow:0 24px 70px -12px rgba(239,68,68,.6), inset 0 -10px 24px rgba(0,0,0,.22), inset 0 6px 14px rgba(255,255,255,.18);
+  }
+  .main svg{width:clamp(64px,20vw,88px);height:clamp(64px,20vw,88px)}
+  .main .lbl{font-size:clamp(28px,8.5vw,36px);font-weight:800;letter-spacing:2px}
+  .main .i-stop{display:none}
+  .running .main .i-play{display:none}
+  .running .main .i-stop{display:block}
+  .ring{position:absolute;inset:-12px;border-radius:50%;border:3px solid rgba(239,68,68,.55);opacity:0;pointer-events:none}
+  .running .ring{animation:pulse 2.2s ease-out infinite}
+  @keyframes pulse{0%{transform:scale(.94);opacity:.9}100%{transform:scale(1.14);opacity:0}}
+
+  .sub{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:72px}
+  .discard{display:none;min-height:44px;padding:0 18px;font-size:16px;color:var(--muted);font-weight:600}
+  .running .discard{display:block}
+  .hint{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--muted);font-size:15px;min-height:44px;padding:0 14px}
+  .hint svg{width:18px;height:18px}
+  .running .hint{display:none}
+
+  /* ---------- Stats + History ---------- */
+  h3{font-size:22px;margin:30px 2px 14px;letter-spacing:-.3px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .stat{background:var(--card);border-radius:20px;padding:16px;border:1px solid var(--line)}
+  .stat .t{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+  .stat .t i{width:10px;height:10px;border-radius:50%}
+  .stat.r .t i{background:var(--blue)} .stat.d .t i{background:var(--amber)}
+  .stat .avg{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;margin:10px 0 2px;letter-spacing:-1px}
+  .stat .avg small{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:2px}
+  .stat .meta{font-size:14px;color:var(--muted);line-height:1.5}
+  .stat .meta b{color:var(--text);font-variant-numeric:tabular-nums}
+  .delta{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:16px;color:var(--muted)}
+  .delta b{color:var(--text)}
+
+  .list{display:flex;flex-direction:column;gap:10px}
+  .ride{
+    width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;min-height:72px;
+  }
+  .ride:active{background:var(--card2)}
+  .rdate{font-size:17px;font-weight:700}
+  .rtime{font-size:15px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
+  .rright{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+  .rdur{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+  .badge{font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.4px}
+  .badge.r{background:var(--blue-soft);color:#9cc0ff}
+  .badge.d{background:var(--amber-soft);color:#ffd27a}
+  .empty{color:var(--muted);text-align:center;padding:28px 10px;background:var(--card);border-radius:18px;border:1px dashed var(--line)}
+
+  .tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:26px 0 40px}
+  .tool{background:var(--card);border:1px solid var(--line);border-radius:16px;min-height:64px;padding:8px;font-size:14px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
+  .tool svg{width:22px;height:22px;color:var(--text)}
+  .tool:active{background:var(--card2)}
+
+  /* ---------- Route prompt overlay ---------- */
+  .overlay{
+    position:fixed;inset:0;z-index:50;display:none;
+    background:rgba(6,8,12,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 18px);
+  }
+  .overlay.open{display:flex;animation:fade .2s ease}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .ov{width:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+  .ov-k{text-align:center;color:var(--muted);font-size:17px;font-weight:600;margin-top:6px}
+  .ov h2{text-align:center;font-size:clamp(34px,10vw,46px);margin:0 0 6px;letter-spacing:-1px}
+  .big{
+    flex:1;min-height:150px;border-radius:28px;display:flex;align-items:center;justify-content:center;gap:16px;
+    font-size:clamp(40px,13vw,58px);font-weight:900;letter-spacing:2px;color:#fff;
+  }
+  .big svg{width:clamp(48px,14vw,64px);height:clamp(48px,14vw,64px)}
+  .big:active{transform:scale(.98)}
+  .big.yes{background:linear-gradient(160deg,#4f8ff7,#1d4ed8);box-shadow:0 16px 40px -14px rgba(59,130,246,.7)}
+  .big.no{background:linear-gradient(160deg,#fbbf24,#d97706);box-shadow:0 16px 40px -14px rgba(245,158,11,.7);color:#1a1205}
+  .ov-later{min-height:60px;border-radius:18px;background:var(--card);font-size:19px;font-weight:700;color:var(--muted)}
+
+  /* ---------- Sheet ---------- */
+  .sheet{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;background:rgba(0,0,0,.55)}
+  .sheet.open{display:flex}
+  .sheet-c{
+    width:100%;max-width:560px;margin:0 auto;background:#121821;border-radius:26px 26px 0 0;
+    padding:20px 18px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:12px;
+    animation:up .22s ease;border-top:1px solid var(--line);
+  }
+  @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+  .sheet-t{font-size:20px;font-weight:800;text-align:center}
+  .sheet-s{font-size:15px;color:var(--muted);text-align:center;margin-top:-6px}
+  .seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .seg button{min-height:64px;border-radius:16px;background:var(--card);border:2px solid var(--line);font-weight:700;font-size:17px;color:var(--muted)}
+  .seg button.on[data-v="1"]{border-color:var(--blue);background:var(--blue-soft);color:#cfe0ff}
+  .seg button.on[data-v="0"]{border-color:var(--amber);background:var(--amber-soft);color:#ffe7b8}
+  .btn{min-height:58px;border-radius:16px;font-size:17px;font-weight:700;background:var(--card)}
+  .btn.danger{color:#ff7b7b}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:60;
+    transform:translate(-50%,140%);transition:transform .28s ease;
+    width:calc(100% - 28px);max-width:520px;background:#202a38;border:1px solid #2e3a4d;border-radius:18px;
+    padding:10px 10px 10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;
+    font-size:17px;font-weight:600;box-shadow:0 18px 50px -10px rgba(0,0,0,.6);
+  }
+  .toast.show{transform:translate(-50%,0)}
+  .toast button{min-height:48px;padding:0 16px;border-radius:12px;background:#33445c;font-weight:800;color:#cfe0ff}
+
+  @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <section class="hero">
+    <div class="top">
+      <div class="brand"><img src="icon-180.png" alt="">Fahrzeit</div>
+      <div class="live"><i></i>Fahrt läuft</div>
+    </div>
+
+    <div class="clock">
+      <div class="timer" id="timer">00:00</div>
+      <div class="status" id="status">Bereit für die Fahrt</div>
+    </div>
+
+    <button class="route" id="routeBtn" aria-label="Route wählen"></button>
+
+    <button class="main" id="mainBtn" aria-label="Fahrt starten oder beenden">
+      <span class="ring"></span>
+      <svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l11-6.86a1 1 0 0 0 0-1.7l-11-6.86A1 1 0 0 0 8 5.14z"/></svg>
+      <svg class="i-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5"/></svg>
+      <span class="lbl" id="mainLbl">START</span>
+    </button>
+
+    <div class="sub">
+      <button class="discard" id="discardBtn">Fahrt verwerfen</button>
+      <a class="hint" href="#history" onclick="document.getElementById('history').scrollIntoView({behavior:'smooth'});return false">
+        Statistik &amp; Verlauf
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </a>
+    </div>
+  </section>
+
+  <section id="history">
+    <h3>Statistik</h3>
+    <div class="stats">
+      <div class="stat r"><div class="t"><i></i>Risstissen</div><div class="avg" id="avgR">–</div><div class="meta" id="metaR"></div></div>
+      <div class="stat d"><div class="t"><i></i>Direkt</div><div class="avg" id="avgD">–</div><div class="meta" id="metaD"></div></div>
+    </div>
+    <div class="delta" id="delta" hidden></div>
+
+    <h3>Verlauf</h3>
+    <div class="list" id="list"></div>
+
+    <div class="tools">
+      <button class="tool" id="csvBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+        CSV Export
+      </button>
+      <button class="tool" id="backupBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        Backup sichern
+      </button>
+      <button class="tool" id="restoreBtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></svg>
+        Backup laden
+      </button>
+    </div>
+    <input type="file" id="fileIn" accept="application/json,.json" hidden>
+  </section>
+</div>
+
+<!-- Route prompt -->
+<div class="overlay" id="prompt" role="dialog" aria-modal="true">
+  <div class="ov">
+    <div class="ov-k" id="pKick">7 Minuten unterwegs</div>
+    <h2 id="pTitle">Über Risstissen?</h2>
+    <button class="big yes" data-v="1">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>JA
+    </button>
+    <button class="big no" data-v="0">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>NEIN
+    </button>
+    <button class="ov-later" id="pLater">Später</button>
+  </div>
+</div>
+
+<!-- Ride edit sheet -->
+<div class="sheet" id="sheet">
+  <div class="sheet-c">
+    <div class="sheet-t" id="sTitle"></div>
+    <div class="sheet-s" id="sSub"></div>
+    <div class="seg" id="sSeg">
+      <button data-v="1">Über Risstissen</button>
+      <button data-v="0">Ohne Risstissen</button>
+    </div>
+    <button class="btn danger" id="sDel">Fahrt löschen</button>
+    <button class="btn" id="sClose">Fertig</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn" hidden></button></div>
+
+<script>
+(() => {
+  'use strict';
+  const K_RIDES = 'fahrzeit.rides.v1';
+  const K_ACTIVE = 'fahrzeit.active.v1';
+  const PROMPT_AFTER_MS = 7 * 60 * 1000;
+
+  const $ = s => document.querySelector(s);
+  const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+
+  /** rides: [{id, start, end, risstissen: boolean}] newest first */
+  let rides = load(K_RIDES, []);
+  /** active: {start, route: null|true|false, snoozed: bool} */
+  let active = load(K_ACTIVE, null);
+  let promptMode = null;     // 'auto' | 'manual' | 'stop'
+  let promptOpenedAt = 0;
+  let stopAt = null;
+  let lastTap = 0;
+
+  function persist() {
+    try {
+      localStorage.setItem(K_RIDES, JSON.stringify(rides));
+      if (active) localStorage.setItem(K_ACTIVE, JSON.stringify(active));
+      else localStorage.removeItem(K_ACTIVE);
+    } catch { toast('Speichern fehlgeschlagen!'); }
+  }
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
+
+  // ---------- formatting ----------
+  const p2 = n => String(n).padStart(2, '0');
+  function fmtDur(ms) {
+    const s = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    return h ? `${h}:${p2(m)}:${p2(ss)}` : `${p2(m)}:${p2(ss)}`;
+  }
+  const fmtClock = t => new Date(t).toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  const fmtDate = t => new Date(t).toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit', year: '2-digit' });
+  const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+
+  // ---------- audio chime (unlocked on Start tap) ----------
+  let actx = null;
+  function unlockAudio() {
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = 'transient';
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      actx.resume();
+      const o = actx.createOscillator(), g = actx.createGain();
+      g.gain.value = 0; o.connect(g).connect(actx.destination); o.start(); o.stop(actx.currentTime + 0.02);
+    } catch {}
+  }
+  function chime() {
+    if (!actx) return;
+    try {
+      actx.resume();
+      const t = actx.currentTime;
+      [[784, 0], [1047, 0.2], [1319, 0.4]].forEach(([f, d]) => {
+        const o = actx.createOscillator(), g = actx.createGain();
+        o.type = 'sine'; o.frequency.value = f;
+        g.gain.setValueAtTime(0.0001, t + d);
+        g.gain.exponentialRampToValueAtTime(0.5, t + d + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t + d + 0.45);
+        o.connect(g).connect(actx.destination); o.start(t + d); o.stop(t + d + 0.5);
+      });
+    } catch {}
+  }
+
+  // ---------- keep screen awake while riding ----------
+  let wakeLock = null;
+  async function wake() {
+    try {
+      if (!wakeLock && 'wakeLock' in navigator && document.visibilityState === 'visible') {
+        wakeLock = await navigator.wakeLock.request('screen');
+        wakeLock.addEventListener('release', () => { wakeLock = null; });
+      }
+    } catch {}
+  }
+  function unwake() { try { wakeLock && wakeLock.release(); } catch {} wakeLock = null; }
+
+  // ---------- ride control ----------
+  function startRide() {
+    unlockAudio();
+    active = { start: Date.now(), route: null, snoozed: false };
+    persist(); wake(); render();
+  }
+  function requestStop() {
+    stopAt = Date.now();
+    if (active.route === null) openPrompt('stop');
+    else finishRide();
+  }
+  function finishRide() {
+    const ride = { id: uid(), start: active.start, end: stopAt || Date.now(), risstissen: !!active.route };
+    const prev = { ...active };
+    rides.unshift(ride);
+    active = null; stopAt = null;
+    persist(); unwake(); render();
+    toast(`Gespeichert · ${fmtDur(ride.end - ride.start)}`, 'Rückgängig', () => {
+      rides = rides.filter(r => r.id !== ride.id);
+      active = prev; persist(); wake(); render();
+    });
+  }
+  function discardRide() {
+    if (!confirm('Diese Fahrt verwerfen? Sie wird nicht gespeichert.')) return;
+    active = null; stopAt = null; persist(); unwake(); render();
+  }
+
+  $('#mainBtn').addEventListener('click', () => {
+    const now = Date.now();
+    if (now - lastTap < 800) return; // guard against double taps
+    lastTap = now;
+    active ? requestStop() : startRide();
+  });
+  $('#discardBtn').addEventListener('click', discardRide);
+  $('#routeBtn').addEventListener('click', () => active && openPrompt('manual'));
+
+  // ---------- route prompt ----------
+  function openPrompt(mode) {
+    promptMode = mode;
+    promptOpenedAt = Date.now();
+    const mins = Math.floor((Date.now() - active.start) / 60000);
+    $('#pKick').textContent = mode === 'stop' ? 'Fahrt beenden' : `${mins} Minuten unterwegs`;
+    $('#pTitle').textContent = 'Über Risstissen?';
+    $('#pLater').textContent = mode === 'stop' ? 'Weiterfahren' : mode === 'auto' ? 'Später' : 'Abbrechen';
+    $('#prompt').classList.add('open');
+    if (mode === 'auto') chime();
+  }
+  function closePrompt() { $('#prompt').classList.remove('open'); promptMode = null; }
+
+  document.querySelectorAll('#prompt .big').forEach(b => b.addEventListener('click', () => {
+    if (Date.now() - promptOpenedAt < 450) return; // ignore accidental taps as it appears
+    const mode = promptMode;
+    active.route = b.dataset.v === '1';
+    closePrompt();
+    if (mode === 'stop') finishRide(); else { persist(); render(); }
+  }));
+  $('#pLater').addEventListener('click', () => {
+    if (promptMode === 'auto') { active.snoozed = true; persist(); }
+    if (promptMode === 'stop') stopAt = null;
+    closePrompt();
+  });
+
+  // ---------- ticking ----------
+  function tick() {
+    const t = $('#timer');
+    if (!active) { t.textContent = '00:00'; t.classList.remove('long'); return; }
+    const el = Date.now() - active.start;
+    t.textContent = fmtDur(el);
+    t.classList.toggle('long', el >= 3600000);
+    if (!promptMode && active.route === null && !active.snoozed && el >= PROMPT_AFTER_MS) openPrompt('auto');
+  }
+  setInterval(tick, 500);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') { if (active) wake(); tick(); }
+  });
+
+  // ---------- rendering ----------
+  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>';
+  const ICON_Q = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5h.01"/></svg>';
+
+  function render() {
+    document.body.classList.toggle('running', !!active);
+    $('#mainLbl').textContent = active ? 'STOPP' : 'START';
+
+    if (active) {
+      $('#status').textContent = `Gestartet um ${fmtClock(active.start)}`;
+    } else if (rides.length) {
+      $('#status').textContent = `Letzte Fahrt: ${fmtDur(rides[0].end - rides[0].start)} · ${rides[0].risstissen ? 'Risstissen' : 'Direkt'}`;
+    } else {
+      $('#status').textContent = 'Bereit für die Fahrt';
+    }
+
+    const rb = $('#routeBtn');
+    rb.classList.remove('yes', 'no');
+    if (active && active.route === true) { rb.classList.add('yes'); rb.innerHTML = ICON_CHECK + 'Über Risstissen'; }
+    else if (active && active.route === false) { rb.classList.add('no'); rb.innerHTML = ICON_CHECK + 'Ohne Risstissen'; }
+    else rb.innerHTML = ICON_Q + 'Route noch offen';
+
+    tick();
+    renderStats();
+    renderList();
+  }
+
+  function stats(list) {
+    if (!list.length) return null;
+    const d = list.map(r => r.end - r.start);
+    return { n: d.length, avg: d.reduce((a, b) => a + b, 0) / d.length, min: Math.min(...d), max: Math.max(...d) };
+  }
+  function fillStat(key, s) {
+    $('#avg' + key).innerHTML = s ? `${fmtDur(s.avg)}<small>Ø</small>` : '–';
+    $('#meta' + key).innerHTML = s
+      ? `${s.n} ${s.n === 1 ? 'Fahrt' : 'Fahrten'}<br>Schnellste <b>${fmtDur(s.min)}</b><br>Langsamste <b>${fmtDur(s.max)}</b>`
+      : 'Noch keine Fahrten';
+  }
+  function renderStats() {
+    const sR = stats(rides.filter(r => r.risstissen));
+    const sD = stats(rides.filter(r => !r.risstissen));
+    fillStat('R', sR); fillStat('D', sD);
+    const delta = $('#delta');
+    if (sR && sD) {
+      const diff = sR.avg - sD.avg;
+      delta.hidden = false;
+      delta.innerHTML = Math.abs(diff) < 1000
+        ? 'Beide Routen sind im Schnitt gleich schnell.'
+        : `Über Risstissen bist du im Schnitt <b>${fmtDur(Math.abs(diff))} ${diff > 0 ? 'langsamer' : 'schneller'}</b>.`;
+    } else delta.hidden = true;
+  }
+  function renderList() {
+    const list = $('#list');
+    list.textContent = '';
+    if (!rides.length) {
+      const e = document.createElement('div');
+      e.className = 'empty'; e.textContent = 'Noch keine Fahrten gespeichert.';
+      list.appendChild(e); return;
+    }
+    const frag = document.createDocumentFragment();
+    for (const r of rides) {
+      const b = document.createElement('button');
+      b.className = 'ride'; b.dataset.id = r.id;
+      b.innerHTML = `
+        <div><div class="rdate"></div><div class="rtime"></div></div>
+        <div class="rright"><div class="rdur"></div><span class="badge ${r.risstissen ? 'r' : 'd'}">${r.risstissen ? 'Risstissen' : 'Direkt'}</span></div>`;
+      b.querySelector('.rdate').textContent = fmtDate(r.start);
+      b.querySelector('.rtime').textContent = `${fmtClock(r.start)} – ${fmtClock(r.end)}`;
+      b.querySelector('.rdur').textContent = fmtDur(r.end - r.start);
+      b.addEventListener('click', () => openSheet(r.id));
+      frag.appendChild(b);
+    }
+    list.appendChild(frag);
+  }
+
+  // ---------- edit sheet ----------
+  let sheetId = null;
+  function openSheet(id) {
+    const r = rides.find(x => x.id === id); if (!r) return;
+    sheetId = id;
+    $('#sTitle').textContent = `${fmtDate(r.start)} · ${fmtDur(r.end - r.start)}`;
+    $('#sSub').textContent = `${fmtClock(r.start)} – ${fmtClock(r.end)}`;
+    syncSeg(r);
+    $('#sheet').classList.add('open');
+  }
+  function syncSeg(r) {
+    document.querySelectorAll('#sSeg button').forEach(b => b.classList.toggle('on', (b.dataset.v === '1') === r.risstissen));
+  }
+  document.querySelectorAll('#sSeg button').forEach(b => b.addEventListener('click', () => {
+    const r = rides.find(x => x.id === sheetId); if (!r) return;
+    r.risstissen = b.dataset.v === '1'; syncSeg(r); persist(); render();
+  }));
+  $('#sDel').addEventListener('click', () => {
+    if (!confirm('Fahrt wirklich löschen?')) return;
+    rides = rides.filter(x => x.id !== sheetId); persist(); closeSheet(); render();
+  });
+  const closeSheet = () => { $('#sheet').classList.remove('open'); sheetId = null; };
+  $('#sClose').addEventListener('click', closeSheet);
+  $('#sheet').addEventListener('click', e => { if (e.target.id === 'sheet') closeSheet(); });
+
+  // ---------- toast ----------
+  let toastTimer;
+  function hideToast() { $('#toast').classList.remove('show'); }
+  function toast(msg, label, action) {
+    $('#toastMsg').textContent = msg;
+    const b = $('#toastBtn');
+    if (label) { b.textContent = label; b.hidden = false; b.onclick = () => { hideToast(); action(); }; }
+    else b.hidden = true;
+    $('#toast').classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(hideToast, label ? 7000 : 2600);
+  }
+
+  // ---------- export / backup ----------
+  async function shareFile(name, text, type) {
+    const file = new File([text], name, { type });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; }
+    } catch (e) { if (e && e.name === 'AbortError') return; }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement('a'); a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  }
+  const stamp = () => new Date().toISOString().slice(0, 10);
+
+  $('#csvBtn').addEventListener('click', () => {
+    if (!rides.length) return toast('Noch keine Fahrten');
+    const rows = [['Datum', 'Start', 'Ende', 'Dauer', 'Dauer (min)', 'Route']];
+    for (const r of [...rides].reverse()) {
+      rows.push([
+        new Date(r.start).toLocaleDateString('de-DE'), fmtClock(r.start), fmtClock(r.end),
+        fmtDur(r.end - r.start), ((r.end - r.start) / 60000).toFixed(1).replace('.', ','),
+        r.risstissen ? 'Über Risstissen' : 'Ohne Risstissen'
+      ]);
+    }
+    shareFile(`fahrzeiten-${stamp()}.csv`, '﻿' + rows.map(r => r.join(';')).join('\n'), 'text/csv');
+  });
+  $('#backupBtn').addEventListener('click', () => {
+    const data = { app: 'fahrzeit', version: 1, exported: new Date().toISOString(), rides };
+    shareFile(`fahrzeit-backup-${stamp()}.json`, JSON.stringify(data, null, 2), 'application/json');
+  });
+  $('#restoreBtn').addEventListener('click', () => $('#fileIn').click());
+  $('#fileIn').addEventListener('change', async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if (!f) return;
+    try {
+      const data = JSON.parse(await f.text());
+      const incoming = (Array.isArray(data) ? data : data.rides || []).filter(r =>
+        r && typeof r.start === 'number' && typeof r.end === 'number' && r.end > r.start && typeof r.risstissen === 'boolean');
+      const known = new Set(rides.map(r => r.id));
+      let added = 0;
+      for (const r of incoming) {
+        const id = r.id || uid();
+        if (known.has(id)) continue;
+        rides.push({ id, start: r.start, end: r.end, risstissen: r.risstissen }); known.add(id); added++;
+      }
+      rides.sort((a, b) => b.start - a.start);
+      persist(); render();
+      toast(`${added} Fahrten importiert`);
+    } catch { toast('Datei konnte nicht gelesen werden'); }
+  });
+
+  // ---------- boot ----------
+  render();
+  if (active) wake();
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
