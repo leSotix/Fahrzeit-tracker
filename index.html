@@ -7,178 +7,220 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fahrzeit">
-<meta name="theme-color" content="#0a0d12">
+<meta name="theme-color" content="#191b1e">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="preload" href="fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
 <title>Fahrzeit</title>
 <style>
+  /* Barlow (SIL OFL 1.1) — a grotesk modelled on road signage; self-hosted so the app works offline. */
+  @font-face{font-family:Barlow;font-weight:500;font-display:swap;src:url(fonts/barlow-500.woff2) format("woff2")}
+  @font-face{font-family:Barlow;font-weight:600;font-display:swap;src:url(fonts/barlow-600.woff2) format("woff2")}
+  @font-face{font-family:Barlow;font-weight:700;font-display:swap;src:url(fonts/barlow-700.woff2) format("woff2")}
+  @font-face{font-family:"Barlow Condensed";font-weight:600;font-display:swap;src:url(fonts/barlow-condensed-600.woff2) format("woff2")}
+  @font-face{font-family:"Barlow Condensed";font-weight:700;font-display:swap;src:url(fonts/barlow-condensed-700.woff2) format("woff2")}
+
   :root{
-    --bg:#0a0d12; --card:#141a23; --card2:#1b2330; --line:#252f3e;
-    --text:#f4f6f9; --muted:#8b96a8;
-    --green:#22c55e; --red:#ef4444;
-    --blue:#3b82f6; --blue-soft:rgba(59,130,246,.16);
-    --amber:#f59e0b; --amber-soft:rgba(245,158,11,.16);
+    /* road surface */
+    --asphalt:#191b1e; --asphalt-2:#212428; --asphalt-3:#2a2e33; --line:#353a41;
+    --paint:#f2f1ec; --muted:#959ba3; --ink:#15150f;
+    /* signage */
+    --sign-yellow:#f6c400;              /* Ortstafel  → über Risstissen */
+    --sign-blue:#1f5cb3; --blue-hi:#79a8ee; /* Wegweiser → direkt */
+    /* signals */
+    --go:#1f9d50; --go-edge:#157a3c;
+    --stop:#d6261e; --stop-edge:#a51b15;
+
+    --display:"Barlow Condensed","Arial Narrow",-apple-system,system-ui,sans-serif;
+    --text:Barlow,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-  html,body{margin:0;background:var(--bg);color:var(--text)}
+  html,body{margin:0;background:var(--asphalt);color:var(--paint)}
   body{
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Segoe UI",system-ui,sans-serif;
+    font-family:var(--text);font-weight:500;font-size:16px;line-height:1.4;
     -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;
     overscroll-behavior-y:none;
     padding-bottom:env(safe-area-inset-bottom);
   }
   button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;touch-action:manipulation}
-  .wrap{max-width:560px;margin:0 auto;padding:0 18px}
+  :focus-visible{outline:3px solid var(--sign-yellow);outline-offset:3px}
+  .wrap{max-width:560px;margin:0 auto;padding:0 16px}
+  .num{font-family:var(--display);font-variant-numeric:tabular-nums lining-nums}
+
+  /* ---------- Sign plates (shared) ----------
+     A plate is a coloured panel with an inset border line, like a German road sign. */
+  .plate{position:relative;border-radius:14px}
+  .plate::before{content:"";position:absolute;inset:6px;border:3px solid currentColor;border-radius:9px;pointer-events:none}
+  .plate.r{background:var(--sign-yellow);color:var(--ink)}
+  .plate.d{background:var(--sign-blue);color:#fff}
+
+  .tag{
+    display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:5px;
+    font-family:var(--display);font-weight:700;font-size:15px;line-height:1;letter-spacing:.2px;white-space:nowrap;
+  }
+  .tag.r{background:var(--sign-yellow);color:var(--ink);box-shadow:inset 0 0 0 2px var(--sign-yellow),inset 0 0 0 3.5px var(--ink)}
+  .tag.d{background:var(--sign-blue);color:#fff;box-shadow:inset 0 0 0 2px var(--sign-blue),inset 0 0 0 3.5px #fff}
 
   /* ---------- Hero (driving screen) ---------- */
   .hero{
-    min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:space-between;
-    padding:calc(env(safe-area-inset-top) + 14px) 0 22px;gap:14px;
+    min-height:100svh;display:flex;flex-direction:column;
+    padding:calc(env(safe-area-inset-top) + 12px) 0 18px;gap:16px;
   }
-  .top{width:100%;display:flex;align-items:center;justify-content:space-between}
-  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:20px;letter-spacing:-.2px}
+  .top{display:flex;align-items:center;justify-content:space-between;min-height:40px}
+  .brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:700;font-size:24px}
   .brand img{width:30px;height:30px;border-radius:8px}
-  .live{display:none;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--red)}
-  .live i{width:10px;height:10px;border-radius:50%;background:var(--red);animation:blink 1.4s infinite}
+  .live{display:none;align-items:center;gap:8px;font-size:16px;font-weight:600;color:#ff8a84}
+  .live i{width:10px;height:10px;border-radius:50%;background:var(--stop);animation:blink 1.4s infinite}
   .running .live{display:flex}
   @keyframes blink{50%{opacity:.25}}
 
-  .clock{text-align:center}
+  .clock{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:170px}
   .timer{
-    font-size:clamp(76px,24vw,124px);font-weight:700;letter-spacing:-3px;line-height:1;
-    font-variant-numeric:tabular-nums;color:#fff;
+    font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums lining-nums;
+    font-size:clamp(104px,33vw,168px);line-height:.9;letter-spacing:-1px;color:var(--paint);
   }
-  .timer.long{font-size:clamp(60px,18vw,100px)}
-  .status{margin-top:10px;font-size:18px;color:var(--muted);font-weight:500;min-height:24px}
+  .timer.long{font-size:clamp(80px,24vw,128px)}
+  .idle .timer{color:#5c626a}
+  .status{margin-top:12px;font-size:18px;color:var(--muted);min-height:25px}
 
+  /* route sign — tap to choose / change */
   .route{
-    width:100%;min-height:68px;border-radius:20px;padding:0 20px;
-    display:flex;align-items:center;justify-content:center;gap:12px;
-    font-size:21px;font-weight:700;background:var(--card);border:2px dashed var(--line);color:var(--muted);
-    visibility:hidden;
+    width:100%;min-height:92px;padding:14px 22px;border-radius:14px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;text-align:center;
+    color:var(--muted);visibility:hidden;
   }
   .running .route{visibility:visible}
-  .route svg{width:28px;height:28px;flex:none}
-  .route.yes{background:var(--blue-soft);border:2px solid var(--blue);color:#cfe0ff}
-  .route.no{background:var(--amber-soft);border:2px solid var(--amber);color:#ffe7b8}
+  .route::before{border-style:dashed;border-width:2px;border-color:var(--line)}
+  .route.r::before,.route.d::before{border-style:solid;border-width:3px;border-color:currentColor}
+  .route:active{transform:scale(.985)}
+  .route .k{font-size:15px;font-weight:600;opacity:.85}
+  .route .n{font-family:var(--display);font-weight:700;font-size:38px;line-height:1.05}
+  .route:not(.r):not(.d) .n{color:var(--paint)}
 
+  /* start / stop — a wide slab in the thumb zone */
   .main{
-    position:relative;width:min(72vw,300px);aspect-ratio:1;border-radius:50%;color:#fff;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-    background:radial-gradient(circle at 35% 28%,#5ee08f,#16a34a 72%);
-    box-shadow:0 24px 70px -12px rgba(34,197,94,.6), inset 0 -10px 24px rgba(0,0,0,.22), inset 0 6px 14px rgba(255,255,255,.18);
-    transition:transform .12s ease, box-shadow .3s ease;
+    width:100%;height:clamp(150px,30svh,250px);border-radius:26px;color:#fff;
+    display:flex;align-items:center;justify-content:center;gap:16px;
+    background:var(--go);box-shadow:inset 0 -7px 0 var(--go-edge);
+    transition:transform .1s ease, background-color .25s ease, box-shadow .25s ease;
   }
-  .main:active{transform:scale(.95)}
-  .running .main{
-    background:radial-gradient(circle at 35% 28%,#ff8a8a,#dc2626 72%);
-    box-shadow:0 24px 70px -12px rgba(239,68,68,.6), inset 0 -10px 24px rgba(0,0,0,.22), inset 0 6px 14px rgba(255,255,255,.18);
-  }
-  .main svg{width:clamp(64px,20vw,88px);height:clamp(64px,20vw,88px)}
-  .main .lbl{font-size:clamp(28px,8.5vw,36px);font-weight:800;letter-spacing:2px}
+  .main:active{transform:translateY(3px);box-shadow:inset 0 -4px 0 var(--go-edge)}
+  .running .main{background:var(--stop);box-shadow:inset 0 -7px 0 var(--stop-edge)}
+  .running .main:active{box-shadow:inset 0 -4px 0 var(--stop-edge)}
+  .main svg{width:clamp(52px,15vw,68px);height:clamp(52px,15vw,68px);flex:none}
+  .main .lbl{font-family:var(--display);font-weight:700;font-size:clamp(60px,18vw,84px);line-height:1}
   .main .i-stop{display:none}
   .running .main .i-play{display:none}
   .running .main .i-stop{display:block}
-  .ring{position:absolute;inset:-12px;border-radius:50%;border:3px solid rgba(239,68,68,.55);opacity:0;pointer-events:none}
-  .running .ring{animation:pulse 2.2s ease-out infinite}
-  @keyframes pulse{0%{transform:scale(.94);opacity:.9}100%{transform:scale(1.14);opacity:0}}
 
-  .sub{display:flex;flex-direction:column;align-items:center;gap:6px;min-height:72px}
-  .discard{display:none;min-height:44px;padding:0 18px;font-size:16px;color:var(--muted);font-weight:600}
+  .sub{display:flex;justify-content:center;min-height:48px}
+  .discard{display:none;min-height:48px;padding:0 18px;font-size:16px;font-weight:600;color:var(--muted)}
   .running .discard{display:block}
-  .hint{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--muted);font-size:15px;min-height:44px;padding:0 14px}
+  .hint{display:flex;align-items:center;gap:6px;text-decoration:none;color:var(--muted);font-size:16px;font-weight:600;min-height:48px;padding:0 14px}
   .hint svg{width:18px;height:18px}
   .running .hint{display:none}
 
   /* ---------- Stats + History ---------- */
-  h3{font-size:22px;margin:30px 2px 14px;letter-spacing:-.3px}
-  .stats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .stat{background:var(--card);border-radius:20px;padding:16px;border:1px solid var(--line)}
-  .stat .t{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
-  .stat .t i{width:10px;height:10px;border-radius:50%}
-  .stat.r .t i{background:var(--blue)} .stat.d .t i{background:var(--amber)}
-  .stat .avg{font-size:34px;font-weight:800;font-variant-numeric:tabular-nums;margin:10px 0 2px;letter-spacing:-1px}
-  .stat .avg small{font-size:15px;font-weight:600;color:var(--muted);letter-spacing:0;margin-left:2px}
-  .stat .meta{font-size:14px;color:var(--muted);line-height:1.5}
-  .stat .meta b{color:var(--text);font-variant-numeric:tabular-nums}
-  .delta{margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px;font-size:16px;color:var(--muted)}
-  .delta b{color:var(--text)}
+  #history{padding-bottom:36px}
+  h3{font-family:var(--display);font-weight:700;font-size:28px;line-height:1.1;margin:28px 2px 12px}
 
-  .list{display:flex;flex-direction:column;gap:10px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;background:var(--asphalt-2);border-radius:20px}
+  .stat{padding:16px 16px 18px}
+  .stat + .stat{border-left:1px solid var(--line)}
+  .avg{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums lining-nums;font-size:46px;line-height:1;margin:14px 0 4px}
+  .avg small{font-family:var(--text);font-size:18px;font-weight:600;color:var(--muted);margin-right:4px;vertical-align:4px}
+  .meta{font-size:15px;color:var(--muted)}
+  .meta dl{display:grid;grid-template-columns:auto auto;justify-content:space-between;gap:2px 8px;margin:10px 0 0}
+  .meta dt,.meta dd{margin:0}
+  .meta dd{color:var(--paint);font-family:var(--display);font-weight:600;font-size:18px;font-variant-numeric:tabular-nums lining-nums;text-align:right}
+  .delta{margin:10px 2px 0;font-size:16px;color:var(--muted);text-wrap:pretty}
+  .delta b{white-space:nowrap}
+  .delta b{color:var(--paint);font-weight:700}
+
+  .list{background:var(--asphalt-2);border-radius:20px;overflow:hidden}
   .ride{
-    width:100%;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:12px;
-    background:var(--card);border:1px solid var(--line);border-radius:18px;padding:14px 16px;min-height:72px;
+    position:relative;width:100%;text-align:left;min-height:76px;
+    display:grid;grid-template-columns:1fr auto 18px;align-items:center;gap:14px;
+    padding:12px 14px 12px 22px;
   }
-  .ride:active{background:var(--card2)}
-  .rdate{font-size:17px;font-weight:700}
-  .rtime{font-size:15px;color:var(--muted);margin-top:3px;font-variant-numeric:tabular-nums}
-  .rright{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-  .rdur{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
-  .badge{font-size:12px;font-weight:800;padding:4px 9px;border-radius:999px;text-transform:uppercase;letter-spacing:.4px}
-  .badge.r{background:var(--blue-soft);color:#9cc0ff}
-  .badge.d{background:var(--amber-soft);color:#ffd27a}
-  .empty{color:var(--muted);text-align:center;padding:28px 10px;background:var(--card);border-radius:18px;border:1px dashed var(--line)}
+  .ride + .ride{border-top:1px solid var(--line)}
+  .ride::before{content:"";position:absolute;left:8px;top:16px;bottom:16px;width:5px;border-radius:3px}
+  .ride.r::before{background:var(--sign-yellow)}
+  .ride.d::before{background:var(--sign-blue)}
+  .ride:active{background:var(--asphalt-3)}
+  .rdate{font-size:17px;font-weight:600}
+  .rtime{font-size:15px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+  .rright{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
+  .rdur{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums lining-nums}
+  .chev{width:18px;height:18px;color:#5c626a}
+  .empty{color:var(--muted);text-align:center;padding:30px 16px}
 
-  .tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin:26px 0 40px}
-  .tool{background:var(--card);border:1px solid var(--line);border-radius:16px;min-height:64px;padding:8px;font-size:14px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px}
-  .tool svg{width:22px;height:22px;color:var(--text)}
-  .tool:active{background:var(--card2)}
+  .tools{display:grid;grid-template-columns:repeat(3,1fr);margin-top:24px;background:var(--asphalt-2);border-radius:20px;overflow:hidden}
+  .tool{min-height:72px;padding:10px 6px;font-size:14px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+  .tool + .tool{border-left:1px solid var(--line)}
+  .tool svg{width:22px;height:22px;color:var(--paint)}
+  .tool:active{background:var(--asphalt-3)}
 
   /* ---------- Route prompt overlay ---------- */
   .overlay{
     position:fixed;inset:0;z-index:50;display:none;
-    background:rgba(6,8,12,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
-    padding:calc(env(safe-area-inset-top) + 18px) 18px calc(env(safe-area-inset-bottom) + 18px);
+    background:rgba(25,27,30,.96);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+    padding:calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 16px);
   }
   .overlay.open{display:flex;animation:fade .2s ease}
   @keyframes fade{from{opacity:0}to{opacity:1}}
   .ov{width:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
-  .ov-k{text-align:center;color:var(--muted);font-size:17px;font-weight:600;margin-top:6px}
-  .ov h2{text-align:center;font-size:clamp(34px,10vw,46px);margin:0 0 6px;letter-spacing:-1px}
+  .ov-k{text-align:center;color:var(--muted);font-size:17px;font-weight:600;margin-top:4px}
+  .ov h2{text-align:center;font-family:var(--display);font-weight:700;font-size:clamp(44px,13vw,60px);line-height:1;margin:0 0 6px}
   .big{
-    flex:1;min-height:150px;border-radius:28px;display:flex;align-items:center;justify-content:center;gap:16px;
-    font-size:clamp(40px,13vw,58px);font-weight:900;letter-spacing:2px;color:#fff;
+    flex:1;min-height:150px;border-radius:26px;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   }
-  .big svg{width:clamp(48px,14vw,64px);height:clamp(48px,14vw,64px)}
+  .big::before{inset:10px;border-width:4px;border-radius:17px}
   .big:active{transform:scale(.98)}
-  .big.yes{background:linear-gradient(160deg,#4f8ff7,#1d4ed8);box-shadow:0 16px 40px -14px rgba(59,130,246,.7)}
-  .big.no{background:linear-gradient(160deg,#fbbf24,#d97706);box-shadow:0 16px 40px -14px rgba(245,158,11,.7);color:#1a1205}
-  .ov-later{min-height:60px;border-radius:18px;background:var(--card);font-size:19px;font-weight:700;color:var(--muted)}
+  .big .bk{font-family:var(--display);font-weight:700;font-size:clamp(64px,20vw,96px);line-height:1}
+  .big .bs{font-size:19px;font-weight:600;opacity:.85}
+  .ov-later{min-height:60px;border-radius:18px;background:var(--asphalt-2);font-size:19px;font-weight:600;color:var(--paint)}
 
   /* ---------- Sheet ---------- */
-  .sheet{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;background:rgba(0,0,0,.55)}
+  .sheet{position:fixed;inset:0;z-index:40;display:none;align-items:flex-end;background:rgba(0,0,0,.6)}
   .sheet.open{display:flex}
   .sheet-c{
-    width:100%;max-width:560px;margin:0 auto;background:#121821;border-radius:26px 26px 0 0;
-    padding:20px 18px calc(env(safe-area-inset-bottom) + 18px);display:flex;flex-direction:column;gap:12px;
-    animation:up .22s ease;border-top:1px solid var(--line);
+    width:100%;max-width:560px;margin:0 auto;background:var(--asphalt-2);border-radius:26px 26px 0 0;
+    padding:10px 16px calc(env(safe-area-inset-bottom) + 16px);display:flex;flex-direction:column;gap:12px;
+    animation:up .22s ease;
   }
+  .sheet-c::before{content:"";align-self:center;width:40px;height:5px;border-radius:3px;background:var(--line);margin-bottom:6px}
   @keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
-  .sheet-t{font-size:20px;font-weight:800;text-align:center}
-  .sheet-s{font-size:15px;color:var(--muted);text-align:center;margin-top:-6px}
+  .sheet-t{font-family:var(--display);font-weight:700;font-size:48px;line-height:1;text-align:center;font-variant-numeric:tabular-nums lining-nums}
+  .sheet-s{font-size:16px;color:var(--muted);text-align:center;margin-bottom:6px}
   .seg{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .seg button{min-height:64px;border-radius:16px;background:var(--card);border:2px solid var(--line);font-weight:700;font-size:17px;color:var(--muted)}
-  .seg button.on[data-v="1"]{border-color:var(--blue);background:var(--blue-soft);color:#cfe0ff}
-  .seg button.on[data-v="0"]{border-color:var(--amber);background:var(--amber-soft);color:#ffe7b8}
-  .btn{min-height:58px;border-radius:16px;font-size:17px;font-weight:700;background:var(--card)}
-  .btn.danger{color:#ff7b7b}
+  .seg button{min-height:72px;padding:0 12px;border-radius:14px;font-family:var(--display);font-weight:700;font-size:21px;color:var(--muted);background:var(--asphalt-3)}
+  .seg button::before{border-width:2px;border-style:dashed;border-color:var(--line)}
+  .seg button.on[data-v="1"]{background:var(--sign-yellow);color:var(--ink)}
+  .seg button.on[data-v="0"]{background:var(--sign-blue);color:#fff}
+  .seg button.on::before{border-style:solid;border-width:3px;border-color:currentColor}
+  .btn{min-height:56px;border-radius:16px;font-size:17px;font-weight:600;background:var(--asphalt-3)}
+  .btn.danger{color:#ff8a84}
+  .btn.primary{background:var(--paint);color:var(--ink);font-weight:700}
 
   /* ---------- Toast ---------- */
   .toast{
-    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);z-index:60;
-    transform:translate(-50%,140%);transition:transform .28s ease;
-    width:calc(100% - 28px);max-width:520px;background:#202a38;border:1px solid #2e3a4d;border-radius:18px;
+    position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 16px);z-index:60;
+    transform:translate(-50%,calc(100% + 40px + env(safe-area-inset-bottom)));visibility:hidden;
+    transition:transform .28s ease, visibility 0s linear .28s;
+    width:calc(100% - 32px);max-width:528px;background:var(--asphalt-3);border-radius:18px;
     padding:10px 10px 10px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;
-    font-size:17px;font-weight:600;box-shadow:0 18px 50px -10px rgba(0,0,0,.6);
+    font-size:17px;font-weight:600;box-shadow:0 18px 50px -10px rgba(0,0,0,.7);
   }
-  .toast.show{transform:translate(-50%,0)}
-  .toast button{min-height:48px;padding:0 16px;border-radius:12px;background:#33445c;font-weight:800;color:#cfe0ff}
+  .toast.show{transform:translate(-50%,0);visibility:visible;transition:transform .28s ease}
+  .toast button{min-height:48px;padding:0 16px;border-radius:12px;background:var(--paint);color:var(--ink);font-weight:700}
 
   @media (prefers-reduced-motion: reduce){ *{animation:none!important;transition:none!important} }
 </style>
 </head>
-<body>
+<body class="idle">
 
 <div class="wrap">
   <section class="hero">
@@ -192,20 +234,19 @@
       <div class="status" id="status">Bereit für die Fahrt</div>
     </div>
 
-    <button class="route" id="routeBtn" aria-label="Route wählen"></button>
+    <button class="route plate" id="routeBtn" aria-label="Route wählen"></button>
 
     <button class="main" id="mainBtn" aria-label="Fahrt starten oder beenden">
-      <span class="ring"></span>
-      <svg class="i-play" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l11-6.86a1 1 0 0 0 0-1.7l-11-6.86A1 1 0 0 0 8 5.14z"/></svg>
-      <svg class="i-stop" viewBox="0 0 24 24" fill="currentColor"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5"/></svg>
-      <span class="lbl" id="mainLbl">START</span>
+      <svg class="i-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l11-6.86a1 1 0 0 0 0-1.7l-11-6.86A1 1 0 0 0 8 5.14z"/></svg>
+      <svg class="i-stop" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><rect x="5.5" y="5.5" width="13" height="13" rx="2.5"/></svg>
+      <span class="lbl" id="mainLbl">Start</span>
     </button>
 
     <div class="sub">
       <button class="discard" id="discardBtn">Fahrt verwerfen</button>
       <a class="hint" href="#history" onclick="document.getElementById('history').scrollIntoView({behavior:'smooth'});return false">
         Statistik &amp; Verlauf
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
       </a>
     </div>
   </section>
@@ -213,8 +254,8 @@
   <section id="history">
     <h3>Statistik</h3>
     <div class="stats">
-      <div class="stat r"><div class="t"><i></i>Risstissen</div><div class="avg" id="avgR">–</div><div class="meta" id="metaR"></div></div>
-      <div class="stat d"><div class="t"><i></i>Direkt</div><div class="avg" id="avgD">–</div><div class="meta" id="metaD"></div></div>
+      <div class="stat"><span class="tag r">Risstissen</span><div class="avg" id="avgR">–</div><div class="meta" id="metaR"></div></div>
+      <div class="stat"><span class="tag d">Direkt</span><div class="avg" id="avgD">–</div><div class="meta" id="metaD"></div></div>
     </div>
     <div class="delta" id="delta" hidden></div>
 
@@ -223,15 +264,15 @@
 
     <div class="tools">
       <button class="tool" id="csvBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></svg>
         CSV Export
       </button>
       <button class="tool" id="backupBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
         Backup sichern
       </button>
       <button class="tool" id="restoreBtn">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V9M7 14l5-5 5 5"/><path d="M5 3h14"/></svg>
         Backup laden
       </button>
     </div>
@@ -240,35 +281,31 @@
 </div>
 
 <!-- Route prompt -->
-<div class="overlay" id="prompt" role="dialog" aria-modal="true">
+<div class="overlay" id="prompt" role="dialog" aria-modal="true" aria-labelledby="pTitle">
   <div class="ov">
     <div class="ov-k" id="pKick">7 Minuten unterwegs</div>
     <h2 id="pTitle">Über Risstissen?</h2>
-    <button class="big yes" data-v="1">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>JA
-    </button>
-    <button class="big no" data-v="0">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>NEIN
-    </button>
+    <button class="big plate r" data-v="1"><span class="bk">Ja</span><span class="bs">über Risstissen</span></button>
+    <button class="big plate d" data-v="0"><span class="bk">Nein</span><span class="bs">direkt</span></button>
     <button class="ov-later" id="pLater">Später</button>
   </div>
 </div>
 
 <!-- Ride edit sheet -->
 <div class="sheet" id="sheet">
-  <div class="sheet-c">
+  <div class="sheet-c" role="dialog" aria-modal="true" aria-labelledby="sTitle">
     <div class="sheet-t" id="sTitle"></div>
     <div class="sheet-s" id="sSub"></div>
     <div class="seg" id="sSeg">
-      <button data-v="1">Über Risstissen</button>
-      <button data-v="0">Ohne Risstissen</button>
+      <button class="plate" data-v="1">Über Risstissen</button>
+      <button class="plate" data-v="0">Ohne Risstissen</button>
     </div>
     <button class="btn danger" id="sDel">Fahrt löschen</button>
-    <button class="btn" id="sClose">Fertig</button>
+    <button class="btn primary" id="sClose">Fertig</button>
   </div>
 </div>
 
-<div class="toast" id="toast"><span id="toastMsg"></span><button id="toastBtn" hidden></button></div>
+<div class="toast" id="toast" role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastBtn" hidden></button></div>
 
 <script>
 (() => {
@@ -425,26 +462,27 @@
   });
 
   // ---------- rendering ----------
-  const ICON_CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 12.5l5 5 10-11"/></svg>';
-  const ICON_Q = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z"/><path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 2.5-3 4.5M12 17.5h.01"/></svg>';
+  const ICON_CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
+  const routeTag = r => r ? '<span class="tag r">Risstissen</span>' : '<span class="tag d">Direkt</span>';
 
   function render() {
     document.body.classList.toggle('running', !!active);
-    $('#mainLbl').textContent = active ? 'STOPP' : 'START';
+    document.body.classList.toggle('idle', !active);
+    $('#mainLbl').textContent = active ? 'Stopp' : 'Start';
 
     if (active) {
       $('#status').textContent = `Gestartet um ${fmtClock(active.start)}`;
     } else if (rides.length) {
-      $('#status').textContent = `Letzte Fahrt: ${fmtDur(rides[0].end - rides[0].start)} · ${rides[0].risstissen ? 'Risstissen' : 'Direkt'}`;
+      $('#status').textContent = `Letzte Fahrt: ${fmtDur(rides[0].end - rides[0].start)}, ${rides[0].risstissen ? 'über Risstissen' : 'direkt'}`;
     } else {
       $('#status').textContent = 'Bereit für die Fahrt';
     }
 
     const rb = $('#routeBtn');
-    rb.classList.remove('yes', 'no');
-    if (active && active.route === true) { rb.classList.add('yes'); rb.innerHTML = ICON_CHECK + 'Über Risstissen'; }
-    else if (active && active.route === false) { rb.classList.add('no'); rb.innerHTML = ICON_CHECK + 'Ohne Risstissen'; }
-    else rb.innerHTML = ICON_Q + 'Route noch offen';
+    rb.classList.remove('r', 'd');
+    if (active && active.route === true) { rb.classList.add('r'); rb.innerHTML = '<span class="k">über</span><span class="n">Risstissen</span>'; }
+    else if (active && active.route === false) { rb.classList.add('d'); rb.innerHTML = '<span class="k">ohne Risstissen</span><span class="n">Direkt</span>'; }
+    else rb.innerHTML = '<span class="k">Antippen zum Wählen</span><span class="n">Route offen</span>';
 
     tick();
     renderStats();
@@ -457,9 +495,9 @@
     return { n: d.length, avg: d.reduce((a, b) => a + b, 0) / d.length, min: Math.min(...d), max: Math.max(...d) };
   }
   function fillStat(key, s) {
-    $('#avg' + key).innerHTML = s ? `${fmtDur(s.avg)}<small>Ø</small>` : '–';
+    $('#avg' + key).innerHTML = s ? `<small>Ø</small>${fmtDur(s.avg)}` : '–';
     $('#meta' + key).innerHTML = s
-      ? `${s.n} ${s.n === 1 ? 'Fahrt' : 'Fahrten'}<br>Schnellste <b>${fmtDur(s.min)}</b><br>Langsamste <b>${fmtDur(s.max)}</b>`
+      ? `${s.n} ${s.n === 1 ? 'Fahrt' : 'Fahrten'}<dl><dt>Schnellste</dt><dd>${fmtDur(s.min)}</dd><dt>Langsamste</dt><dd>${fmtDur(s.max)}</dd></dl>`
       : 'Noch keine Fahrten';
   }
   function renderStats() {
@@ -480,16 +518,16 @@
     list.textContent = '';
     if (!rides.length) {
       const e = document.createElement('div');
-      e.className = 'empty'; e.textContent = 'Noch keine Fahrten gespeichert.';
+      e.className = 'empty'; e.textContent = 'Noch keine Fahrten gespeichert. Tippe oben auf Start, wenn du losfährst.';
       list.appendChild(e); return;
     }
     const frag = document.createDocumentFragment();
     for (const r of rides) {
       const b = document.createElement('button');
-      b.className = 'ride'; b.dataset.id = r.id;
+      b.className = 'ride ' + (r.risstissen ? 'r' : 'd'); b.dataset.id = r.id;
       b.innerHTML = `
         <div><div class="rdate"></div><div class="rtime"></div></div>
-        <div class="rright"><div class="rdur"></div><span class="badge ${r.risstissen ? 'r' : 'd'}">${r.risstissen ? 'Risstissen' : 'Direkt'}</span></div>`;
+        <div class="rright"><div class="rdur"></div>${routeTag(r.risstissen)}</div>${ICON_CHEV}`;
       b.querySelector('.rdate').textContent = fmtDate(r.start);
       b.querySelector('.rtime').textContent = `${fmtClock(r.start)} – ${fmtClock(r.end)}`;
       b.querySelector('.rdur').textContent = fmtDur(r.end - r.start);
@@ -504,8 +542,8 @@
   function openSheet(id) {
     const r = rides.find(x => x.id === id); if (!r) return;
     sheetId = id;
-    $('#sTitle').textContent = `${fmtDate(r.start)} · ${fmtDur(r.end - r.start)}`;
-    $('#sSub').textContent = `${fmtClock(r.start)} – ${fmtClock(r.end)}`;
+    $('#sTitle').textContent = fmtDur(r.end - r.start);
+    $('#sSub').textContent = `${fmtDate(r.start)}, ${fmtClock(r.start)} – ${fmtClock(r.end)}`;
     syncSeg(r);
     $('#sheet').classList.add('open');
   }
