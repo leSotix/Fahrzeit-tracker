@@ -28,6 +28,7 @@
     /* signage */
     --sign-yellow:#f6c400;              /* Ortstafel  → über Risstissen */
     --sign-blue:#1f5cb3; --blue-hi:#79a8ee; /* Wegweiser → direkt */
+    --steel:#56606c;                    /* Ulm-Einfahrt → Donautal (B 10 uses white paint) */
     /* signals */
     --go:#1f9d50; --go-edge:#157a3c;
     --stop:#d6261e; --stop-edge:#a51b15;
@@ -36,6 +37,7 @@
     --text:Barlow,-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  [hidden]{display:none!important}
   html,body{margin:0;background:var(--asphalt);color:var(--paint)}
   body{
     font-family:var(--text);font-weight:500;font-size:16px;line-height:1.4;
@@ -54,6 +56,8 @@
   .plate::before{content:"";position:absolute;inset:6px;border:3px solid currentColor;border-radius:9px;pointer-events:none}
   .plate.r{background:var(--sign-yellow);color:var(--ink)}
   .plate.d{background:var(--sign-blue);color:#fff}
+  .plate.w{background:var(--paint);color:var(--ink)}
+  .plate.s{background:var(--steel);color:#fff}
 
   .tag{
     display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:5px;
@@ -61,6 +65,8 @@
   }
   .tag.r{background:var(--sign-yellow);color:var(--ink);box-shadow:inset 0 0 0 2px var(--sign-yellow),inset 0 0 0 3.5px var(--ink)}
   .tag.d{background:var(--sign-blue);color:#fff;box-shadow:inset 0 0 0 2px var(--sign-blue),inset 0 0 0 3.5px #fff}
+  .tag.w{background:var(--paint);color:var(--ink);box-shadow:inset 0 0 0 2px var(--paint),inset 0 0 0 3.5px var(--ink)}
+  .tag.s{background:var(--steel);color:#fff;box-shadow:inset 0 0 0 2px var(--steel),inset 0 0 0 3.5px #fff}
 
   /* ---------- Hero (driving screen) ---------- */
   .hero{
@@ -83,8 +89,12 @@
   .timer.long{font-size:clamp(80px,24vw,128px)}
   .idle .timer{color:#5c626a}
   .status{margin-top:12px;font-size:18px;color:var(--muted);min-height:25px}
+  .geoline{margin-top:6px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;font-weight:600;color:var(--muted);text-wrap:balance}
+  .geoline svg{width:16px;height:16px;flex:none}
 
-  /* route sign — tap to choose / change */
+  /* route signs — tap to choose / change */
+  .routes{display:grid;grid-template-columns:1fr;gap:10px}
+  .routes.two{grid-template-columns:1fr 1fr}
   .route{
     width:100%;min-height:92px;padding:14px 22px;border-radius:14px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;text-align:center;
@@ -92,11 +102,14 @@
   }
   .running .route{visibility:visible}
   .route::before{border-style:dashed;border-width:2px;border-color:var(--line)}
-  .route.r::before,.route.d::before{border-style:solid;border-width:3px;border-color:currentColor}
+  .route.set::before{border-style:solid;border-width:3px;border-color:currentColor}
   .route:active{transform:scale(.985)}
   .route .k{font-size:15px;font-weight:600;opacity:.85}
   .route .n{font-family:var(--display);font-weight:700;font-size:38px;line-height:1.05}
-  .route:not(.r):not(.d) .n{color:var(--paint)}
+  .route:not(.set) .n{color:var(--paint)}
+  .routes.two .route{padding:14px 10px}
+  .routes.two .route .n{font-size:30px}
+  .routes.two .route .k{font-size:14px}
 
   /* start / stop — a wide slab in the thumb zone */
   .main{
@@ -151,10 +164,27 @@
   .ride:active{background:var(--asphalt-3)}
   .rdate{font-size:17px;font-weight:600}
   .rtime{font-size:15px;color:var(--muted);margin-top:2px;font-variant-numeric:tabular-nums}
+  .rdir{font-size:14px;color:var(--muted);margin-top:1px}
   .rright{display:flex;flex-direction:column;align-items:flex-end;gap:5px}
   .rdur{font-family:var(--display);font-weight:700;font-size:30px;line-height:1;font-variant-numeric:tabular-nums lining-nums}
   .chev{width:18px;height:18px;color:#5c626a}
   .empty{color:var(--muted);text-align:center;padding:30px 16px}
+
+  #viaStats{margin-top:16px}
+
+  /* location setting */
+  .setting{
+    width:100%;margin-top:24px;padding:16px 16px 16px 18px;border-radius:20px;background:var(--asphalt-2);
+    display:flex;align-items:center;gap:14px;text-align:left;
+  }
+  .setting:active{background:var(--asphalt-3)}
+  .set-t{font-size:17px;font-weight:600}
+  .set-s{font-size:15px;color:var(--muted);margin-top:3px;text-wrap:pretty}
+  .switch{flex:none;position:relative;width:56px;height:34px;border-radius:17px;background:var(--asphalt-3);box-shadow:inset 0 0 0 2px var(--line);transition:background-color .2s ease}
+  .switch i{position:absolute;top:4px;left:4px;width:26px;height:26px;border-radius:50%;background:var(--muted);transition:transform .2s ease, background-color .2s ease}
+  .setting[aria-checked="true"] .switch{background:var(--go);box-shadow:none}
+  .setting[aria-checked="true"] .switch i{transform:translateX(22px);background:#fff}
+  .setting + .tools{margin-top:12px}
 
   .tools{display:grid;grid-template-columns:repeat(3,1fr);margin-top:24px;background:var(--asphalt-2);border-radius:20px;overflow:hidden}
   .tool{min-height:72px;padding:10px 6px;font-size:14px;font-weight:600;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
@@ -200,6 +230,8 @@
   .seg button::before{border-width:2px;border-style:dashed;border-color:var(--line)}
   .seg button.on[data-v="1"]{background:var(--sign-yellow);color:var(--ink)}
   .seg button.on[data-v="0"]{background:var(--sign-blue);color:#fff}
+  .seg button.on[data-v="b10"]{background:var(--paint);color:var(--ink)}
+  .seg button.on[data-v="donautal"]{background:var(--steel);color:#fff}
   .seg button.on::before{border-style:solid;border-width:3px;border-color:currentColor}
   .btn{min-height:56px;border-radius:16px;font-size:17px;font-weight:600;background:var(--asphalt-3)}
   .btn.danger{color:#ff8a84}
@@ -232,9 +264,16 @@
     <div class="clock">
       <div class="timer" id="timer">00:00</div>
       <div class="status" id="status">Bereit für die Fahrt</div>
+      <div class="geoline" id="geoLine" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+        <span id="geoText"></span>
+      </div>
     </div>
 
-    <button class="route plate" id="routeBtn" aria-label="Route wählen"></button>
+    <div class="routes" id="routes">
+      <button class="route plate" id="routeBtn" aria-label="Route wählen"></button>
+      <button class="route plate" id="viaBtn" aria-label="Einfahrt Ulm wählen" hidden></button>
+    </div>
 
     <button class="main" id="mainBtn" aria-label="Fahrt starten oder beenden">
       <svg class="i-play" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l11-6.86a1 1 0 0 0 0-1.7l-11-6.86A1 1 0 0 0 8 5.14z"/></svg>
@@ -258,9 +297,24 @@
       <div class="stat"><span class="tag d">Direkt</span><div class="avg" id="avgD">–</div><div class="meta" id="metaD"></div></div>
     </div>
     <div class="delta" id="delta" hidden></div>
+    <div id="viaStats" hidden>
+      <div class="stats">
+        <div class="stat"><span class="tag w">B 10</span><div class="avg" id="avgB">–</div><div class="meta" id="metaB"></div></div>
+        <div class="stat"><span class="tag s">Donautal</span><div class="avg" id="avgT">–</div><div class="meta" id="metaT"></div></div>
+      </div>
+      <div class="delta" id="deltaV" hidden></div>
+    </div>
 
     <h3>Verlauf</h3>
     <div class="list" id="list"></div>
+
+    <button class="setting" id="geoBtn" role="switch" aria-checked="false">
+      <div>
+        <div class="set-t">Standort-Abfrage</div>
+        <div class="set-s">Fragt in Laupheim (ab Ulm) bzw. in Untersulmetingen und an der Ausfahrt Ulm-Donautal (ab Unterstadion) statt nach 7 Minuten. Prüft den Standort nur alle paar Minuten, kurz vor einem Abfragepunkt öfter.</div>
+      </div>
+      <span class="switch" aria-hidden="true"><i></i></span>
+    </button>
 
     <div class="tools">
       <button class="tool" id="csvBtn">
@@ -285,8 +339,8 @@
   <div class="ov">
     <div class="ov-k" id="pKick">7 Minuten unterwegs</div>
     <h2 id="pTitle">Über Risstissen?</h2>
-    <button class="big plate r" data-v="1"><span class="bk">Ja</span><span class="bs">über Risstissen</span></button>
-    <button class="big plate d" data-v="0"><span class="bk">Nein</span><span class="bs">direkt</span></button>
+    <button class="big plate r" id="pA"><span class="bk">Ja</span><span class="bs">über Risstissen</span></button>
+    <button class="big plate d" id="pB"><span class="bk">Nein</span><span class="bs">direkt</span></button>
     <button class="ov-later" id="pLater">Später</button>
   </div>
 </div>
@@ -300,6 +354,10 @@
       <button class="plate" data-v="1">Über Risstissen</button>
       <button class="plate" data-v="0">Ohne Risstissen</button>
     </div>
+    <div class="seg" id="sSegV" hidden>
+      <button class="plate" data-v="b10">Über B 10</button>
+      <button class="plate" data-v="donautal">Über Donautal</button>
+    </div>
     <button class="btn danger" id="sDel">Fahrt löschen</button>
     <button class="btn primary" id="sClose">Fertig</button>
   </div>
@@ -312,17 +370,48 @@
   'use strict';
   const K_RIDES = 'fahrzeit.rides.v1';
   const K_ACTIVE = 'fahrzeit.active.v1';
+  const K_GEO = 'fahrzeit.geo.v1';
   const PROMPT_AFTER_MS = 7 * 60 * 1000;
+
+  // ---------- places (coordinates from OpenStreetMap; r = radius in metres) ----------
+  // Where a ride starts decides the direction and which checkpoints apply.
+  const ORIGINS = {
+    ulm:          { name: 'Ulm',          lat: 48.3985, lon: 9.9912, r: 12000 },
+    unterstadion: { name: 'Unterstadion', lat: 48.2036, lon: 9.6884, r: 6000 },
+  };
+  const DEST = { ulm: 'unterstadion', unterstadion: 'ulm' };
+  // q: which question is asked there ('route' = über Risstissen?, 'via' = B 10 oder Donautal?)
+  const CHECKPOINTS = {
+    ulm: [
+      { id: 'laupheim', q: 'route', at: 'in Laupheim', kick: 'In Laupheim', lat: 48.2301, lon: 9.8837, r: 4000 },
+    ],
+    unterstadion: [
+      { id: 'untersulmetingen', q: 'route', at: 'in Untersulmetingen', kick: 'In Untersulmetingen', lat: 48.2307, lon: 9.8263, r: 1500 },
+      { id: 'donautal', q: 'via', at: 'an der Ausfahrt Ulm-Donautal', kick: 'B 30 · Ausfahrt Ulm-Donautal', lat: 48.3607, lon: 9.9683, r: 1000 },
+    ],
+  };
+  // Sampling: sparse while far away, denser when a checkpoint could be reached soon.
+  const MAX_SPEED = 36;                 // m/s ≈ 130 km/h — the fastest we could approach a checkpoint
+  const GEO_MIN_GAP = 15000, GEO_MAX_GAP = 3 * 60000, GEO_RETRY = 30000;
 
   const $ = s => document.querySelector(s);
   const load = (k, d) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch { return d; } };
+  const isOrigin = v => v === 'ulm' || v === 'unterstadion';
+  const isVia = v => v === 'b10' || v === 'donautal';
+  const dirName = from => `${ORIGINS[from].name} → ${ORIGINS[DEST[from]].name}`;
 
-  /** rides: [{id, start, end, risstissen: boolean}] newest first */
+  /** rides: [{id, start, end, risstissen: boolean, from?: 'ulm'|'unterstadion', via?: 'b10'|'donautal'}] newest first */
   let rides = load(K_RIDES, []);
-  /** active: {start, route: null|true|false, snoozed: bool} */
+  /** active: {start, route: null|true|false, snoozed: bool,
+   *           from: null (not yet located)|'ulm'|'unterstadion'|'other'|'none', via: null|'b10'|'donautal', hit: {checkpointId: true}} */
   let active = load(K_ACTIVE, null);
+  if (active) { active.from ??= null; active.via ??= null; active.hit ??= {}; }
+  let geoOn = load(K_GEO, false) === true;
   let promptMode = null;     // 'auto' | 'manual' | 'stop'
+  let promptQ = 'route';     // 'route' | 'via'
   let promptOpenedAt = 0;
+  let autoQueue = [];        // location prompts waiting while another prompt is open
+  let stopQueue = null;      // questions left to ask before saving, while stopping
   let stopAt = null;
   let lastTap = 0;
 
@@ -333,6 +422,7 @@
       else localStorage.removeItem(K_ACTIVE);
     } catch { toast('Speichern fehlgeschlagen!'); }
   }
+  function saveGeo() { try { localStorage.setItem(K_GEO, JSON.stringify(geoOn)); } catch {} }
   try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch {}
 
   // ---------- formatting ----------
@@ -385,22 +475,117 @@
   }
   function unwake() { try { wakeLock && wakeLock.release(); } catch {} wakeLock = null; }
 
+  // ---------- location ----------
+  // Only foreground sampling is possible for a web app: while the screen is on (the wake lock keeps it on
+  // during a ride). If the phone was locked, the first fix after unlocking catches up via the "passed" check.
+  function dist(a, b) {
+    const R = 6371000, rad = Math.PI / 180;
+    const dLat = (b.lat - a.lat) * rad, dLon = (b.lon - a.lon) * rad;
+    const s = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * rad) * Math.cos(b.lat * rad) * Math.sin(dLon / 2) ** 2;
+    return 2 * R * Math.asin(Math.sqrt(s));
+  }
+  const hasGeo = 'geolocation' in navigator;
+  const geoGuides = () => geoOn && !!active && isOrigin(active.from);
+  function pendingChecks() {
+    if (!geoGuides()) return [];
+    return CHECKPOINTS[active.from].filter(c =>
+      !active.hit[c.id] && (c.q === 'route' ? active.route === null : active.via === null));
+  }
+  const geoWanted = () => hasGeo && geoOn && !!active && !stopQueue && (active.from === null || pendingChecks().length > 0);
+
+  let geoTimer = null, geoReq = 0, geoBusyUntil = 0;
+  function geoSync() {
+    if (!geoWanted()) { clearTimeout(geoTimer); geoTimer = null; return; }
+    if (!geoTimer && Date.now() >= geoBusyUntil) geoSample();
+  }
+  function geoLater(ms) { clearTimeout(geoTimer); geoTimer = setTimeout(geoSample, ms); }
+  function geoSample() {
+    clearTimeout(geoTimer); geoTimer = null;
+    if (!geoWanted() || document.visibilityState !== 'visible') return; // resumes on visibilitychange
+    if (Date.now() < geoBusyUntil) return geoLater(geoBusyUntil - Date.now() + 100);
+    const id = ++geoReq, ride = active.start;
+    geoBusyUntil = Date.now() + 30000;   // a request that never answers must not block sampling forever
+    const done = fn => arg => {
+      if (id !== geoReq) return;
+      geoBusyUntil = 0;
+      if (active && active.start === ride) fn(arg); else geoSync();
+    };
+    navigator.geolocation.getCurrentPosition(done(onFix), done(onGeoError),
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 10000 });
+  }
+  function onFix({ coords: c }) {
+    const here = { lat: c.latitude, lon: c.longitude };
+    const slack = Math.min(c.accuracy || 0, 300);
+    if (active.from === null) {
+      active.from = Object.keys(ORIGINS).find(k => dist(here, ORIGINS[k]) <= ORIGINS[k].r) || 'other';
+    }
+    if (geoGuides()) {
+      const dest = ORIGINS[DEST[active.from]], toDest = dist(here, dest);
+      for (const cp of pendingChecks()) {
+        const reached = dist(here, cp) - slack <= cp.r;
+        const passed = toDest < dist(cp, dest) - cp.r;   // already beyond it, e.g. the screen was off
+        if (!reached && !passed) continue;
+        active.hit[cp.id] = true;
+        ask(cp.q, reached ? cp.kick : null);
+      }
+    }
+    persist();
+    const pend = pendingChecks();
+    if (geoWanted() && pend.length) {
+      const edge = Math.min(...pend.map(cp => dist(here, cp) - cp.r));
+      const gap = Math.min(GEO_MAX_GAP, Math.max(GEO_MIN_GAP, edge / MAX_SPEED * 1000 * 0.8));
+      geoLater(gap);
+    }
+    render();
+  }
+  function onGeoError(e) {
+    if (e && e.code === 1) {   // permission denied → fall back to the 7-minute prompt
+      geoOn = false; saveGeo(); render();
+      return toast('Standort nicht erlaubt – Abfrage nach 7 Minuten');
+    }
+    geoLater(GEO_RETRY);
+  }
+
+  $('#geoBtn').addEventListener('click', () => {
+    if (geoOn) { geoOn = false; saveGeo(); render(); return toast('Standort-Abfrage aus'); }
+    if (!hasGeo) return toast('Standort wird nicht unterstützt');
+    // asks for permission now, from a tap, rather than mid-ride
+    navigator.geolocation.getCurrentPosition(
+      () => { geoOn = true; saveGeo(); render(); toast('Standort-Abfrage an'); },
+      e => {
+        if (e.code === 1) return toast('Standortzugriff nicht erlaubt');
+        geoOn = true; saveGeo(); render(); toast('Standort-Abfrage an · noch kein Signal');
+      },
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 600000 });
+  });
+
   // ---------- ride control ----------
   function startRide() {
     unlockAudio();
-    active = { start: Date.now(), route: null, snoozed: false };
-    persist(); wake(); render();
+    active = { start: Date.now(), route: null, snoozed: false, from: null, via: null, hit: {} };
+    autoQueue = [];
+    persist(); wake(); render();   // render → geoSync takes the first fix right away
   }
   function requestStop() {
     stopAt = Date.now();
-    if (active.route === null) openPrompt('stop');
-    else finishRide();
+    autoQueue = [];
+    stopQueue = [];
+    if (active.route === null) stopQueue.push('route');
+    if (active.from === 'unterstadion' && active.via === null) stopQueue.push('via');
+    nextStopQuestion();
+  }
+  function nextStopQuestion() {
+    const q = stopQueue && stopQueue.shift();
+    if (q) openPrompt('stop', q);
+    else { stopQueue = null; finishRide(); }
   }
   function finishRide() {
     const ride = { id: uid(), start: active.start, end: stopAt || Date.now(), risstissen: !!active.route };
-    const prev = { ...active };
+    if (isOrigin(active.from)) ride.from = active.from;
+    if (isVia(active.via)) ride.via = active.via;
+    const prev = { ...active, hit: { ...active.hit } };
     rides.unshift(ride);
-    active = null; stopAt = null;
+    active = null; stopAt = null; stopQueue = null; autoQueue = [];
     persist(); unwake(); render();
     toast(`Gespeichert · ${fmtDur(ride.end - ride.start)}`, 'Rückgängig', () => {
       rides = rides.filter(r => r.id !== ride.id);
@@ -409,7 +594,7 @@
   }
   function discardRide() {
     if (!confirm('Diese Fahrt verwerfen? Sie wird nicht gespeichert.')) return;
-    active = null; stopAt = null; persist(); unwake(); render();
+    active = null; stopAt = null; stopQueue = null; autoQueue = []; persist(); unwake(); render();
   }
 
   $('#mainBtn').addEventListener('click', () => {
@@ -419,32 +604,65 @@
     active ? requestStop() : startRide();
   });
   $('#discardBtn').addEventListener('click', discardRide);
-  $('#routeBtn').addEventListener('click', () => active && openPrompt('manual'));
+  $('#routeBtn').addEventListener('click', () => active && openPrompt('manual', 'route'));
+  $('#viaBtn').addEventListener('click', () => active && openPrompt('manual', 'via'));
 
   // ---------- route prompt ----------
-  function openPrompt(mode) {
-    promptMode = mode;
+  // a / b: [plate class, big word, small line]; answering a → true / 'b10', b → false / 'donautal'
+  const QUESTIONS = {
+    route: { title: 'Über Risstissen?', a: ['r', 'Ja', 'über Risstissen'], b: ['d', 'Nein', 'direkt'] },
+    via:   { title: 'Wie weiter?', a: ['w', 'B 10', 'weiter auf der B 30'], b: ['s', 'Donautal', 'hier abfahren'] },
+  };
+  function setBig(btn, [cls, big, small]) {
+    btn.className = 'big plate ' + cls;
+    btn.querySelector('.bk').textContent = big;
+    btn.querySelector('.bs').textContent = small;
+  }
+  function openPrompt(mode, q, kick) {
+    promptMode = mode; promptQ = q;
     promptOpenedAt = Date.now();
+    const d = QUESTIONS[q];
     const mins = Math.floor((Date.now() - active.start) / 60000);
-    $('#pKick').textContent = mode === 'stop' ? 'Fahrt beenden' : `${mins} Minuten unterwegs`;
-    $('#pTitle').textContent = 'Über Risstissen?';
-    $('#pLater').textContent = mode === 'stop' ? 'Weiterfahren' : mode === 'auto' ? 'Später' : 'Abbrechen';
+    $('#pKick').textContent = mode === 'stop' ? 'Fahrt beenden' : kick || `${mins} Minuten unterwegs`;
+    $('#pTitle').textContent = d.title;
+    setBig($('#pA'), d.a); setBig($('#pB'), d.b);
+    $('#pLater').textContent = mode === 'stop' ? (q === 'route' ? 'Weiterfahren' : 'Überspringen')
+      : mode === 'auto' ? 'Später' : 'Abbrechen';
     $('#prompt').classList.add('open');
     if (mode === 'auto') chime();
   }
   function closePrompt() { $('#prompt').classList.remove('open'); promptMode = null; }
 
-  document.querySelectorAll('#prompt .big').forEach(b => b.addEventListener('click', () => {
+  // location prompts queue up so that one never replaces another that is still open
+  function ask(q, kick) {
+    if (!autoQueue.some(x => x.q === q)) autoQueue.push({ q, kick });
+    pumpAsk();
+  }
+  function pumpAsk() {
+    if (promptMode || stopQueue || !active) return;
+    while (autoQueue.length) {
+      const { q, kick } = autoQueue.shift();
+      if (q === 'route' ? active.route === null : active.via === null) return openPrompt('auto', q, kick);
+    }
+  }
+
+  [$('#pA'), $('#pB')].forEach(b => b.addEventListener('click', () => {
     if (Date.now() - promptOpenedAt < 450) return; // ignore accidental taps as it appears
-    const mode = promptMode;
-    active.route = b.dataset.v === '1';
+    const mode = promptMode, yes = b.id === 'pA';
+    if (promptQ === 'route') active.route = yes;
+    else active.via = yes ? 'b10' : 'donautal';
     closePrompt();
-    if (mode === 'stop') finishRide(); else { persist(); render(); }
+    if (mode === 'stop') nextStopQuestion();
+    else { persist(); render(); setTimeout(pumpAsk, 400); }
   }));
   $('#pLater').addEventListener('click', () => {
-    if (promptMode === 'auto') { active.snoozed = true; persist(); }
-    if (promptMode === 'stop') stopAt = null;
+    const mode = promptMode, q = promptQ;
+    if (mode === 'auto' && q === 'route') { active.snoozed = true; persist(); }
     closePrompt();
+    if (mode === 'stop') {
+      if (q === 'route') { stopAt = null; stopQueue = null; render(); } // keep driving
+      else nextStopQuestion();                                         // save without B 10 / Donautal
+    } else setTimeout(pumpAsk, 400);
   });
 
   // ---------- ticking ----------
@@ -454,16 +672,38 @@
     const el = Date.now() - active.start;
     t.textContent = fmtDur(el);
     t.classList.toggle('long', el >= 3600000);
-    if (!promptMode && active.route === null && !active.snoozed && el >= PROMPT_AFTER_MS) openPrompt('auto');
+    if (!promptMode && !stopQueue && active.route === null && !active.snoozed && el >= PROMPT_AFTER_MS) {
+      // no fix within 7 minutes → give up on location for this ride
+      if (geoOn && active.from === null) { active.from = 'none'; persist(); geoSync(); renderGeo(); }
+      // the time-based prompt is only the fallback when location can't tell where we are
+      if (!geoGuides()) openPrompt('auto', 'route');
+    }
   }
   setInterval(tick, 500);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') { if (active) wake(); tick(); }
+    if (document.visibilityState !== 'visible') return;
+    if (active) { wake(); if (geoWanted()) geoSample(); } // catch up right away after the screen was off
+    tick();
   });
 
   // ---------- rendering ----------
   const ICON_CHEV = '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   const routeTag = r => r ? '<span class="tag r">Risstissen</span>' : '<span class="tag d">Direkt</span>';
+  const viaTag = v => v === 'b10' ? '<span class="tag w">B 10</span>' : v === 'donautal' ? '<span class="tag s">Donautal</span>' : '';
+
+  function renderGeo() {
+    $('#geoBtn').setAttribute('aria-checked', String(geoOn));
+    const line = $('#geoLine');
+    line.hidden = !(active && geoOn);
+    if (line.hidden) return;
+    let t;
+    if (active.from === null) t = 'Standort wird gesucht …';
+    else if (isOrigin(active.from)) {
+      const next = pendingChecks()[0];
+      t = dirName(active.from) + (next ? ` · fragt ${next.at}` : '');
+    } else t = active.from === 'other' ? 'Start weder Ulm noch Unterstadion' : 'Kein Standort';
+    $('#geoText').textContent = t;
+  }
 
   function render() {
     document.body.classList.toggle('running', !!active);
@@ -479,11 +719,22 @@
     }
 
     const rb = $('#routeBtn');
-    rb.classList.remove('r', 'd');
-    if (active && active.route === true) { rb.classList.add('r'); rb.innerHTML = '<span class="k">über</span><span class="n">Risstissen</span>'; }
-    else if (active && active.route === false) { rb.classList.add('d'); rb.innerHTML = '<span class="k">ohne Risstissen</span><span class="n">Direkt</span>'; }
+    rb.className = 'route plate';
+    if (active && active.route === true) { rb.classList.add('r', 'set'); rb.innerHTML = '<span class="k">über</span><span class="n">Risstissen</span>'; }
+    else if (active && active.route === false) { rb.classList.add('d', 'set'); rb.innerHTML = '<span class="k">ohne Risstissen</span><span class="n">Direkt</span>'; }
     else rb.innerHTML = '<span class="k">Antippen zum Wählen</span><span class="n">Route offen</span>';
 
+    const vb = $('#viaBtn');
+    const showVia = !!active && (active.from === 'unterstadion' || isVia(active.via));
+    vb.hidden = !showVia;
+    $('#routes').classList.toggle('two', showVia);
+    vb.className = 'route plate';
+    if (active && active.via === 'b10') { vb.classList.add('w', 'set'); vb.innerHTML = '<span class="k">über</span><span class="n">B 10</span>'; }
+    else if (active && active.via === 'donautal') { vb.classList.add('s', 'set'); vb.innerHTML = '<span class="k">über</span><span class="n">Donautal</span>'; }
+    else vb.innerHTML = '<span class="k">B 10 / Donautal</span><span class="n">Offen</span>';
+
+    renderGeo();
+    geoSync();
     tick();
     renderStats();
     renderList();
@@ -500,18 +751,27 @@
       ? `${s.n} ${s.n === 1 ? 'Fahrt' : 'Fahrten'}<dl><dt>Schnellste</dt><dd>${fmtDur(s.min)}</dd><dt>Langsamste</dt><dd>${fmtDur(s.max)}</dd></dl>`
       : 'Noch keine Fahrten';
   }
+  function fillDelta(el, a, b, lead, tail) {
+    el.hidden = !(a && b);
+    if (el.hidden) return;
+    const diff = a.avg - b.avg;
+    el.innerHTML = Math.abs(diff) < 1000
+      ? 'Beide Wege sind im Schnitt gleich schnell.'
+      : `${lead} bist du im Schnitt <b>${fmtDur(Math.abs(diff))} ${diff > 0 ? 'langsamer' : 'schneller'}</b>${tail}.`;
+  }
   function renderStats() {
     const sR = stats(rides.filter(r => r.risstissen));
     const sD = stats(rides.filter(r => !r.risstissen));
     fillStat('R', sR); fillStat('D', sD);
-    const delta = $('#delta');
-    if (sR && sD) {
-      const diff = sR.avg - sD.avg;
-      delta.hidden = false;
-      delta.innerHTML = Math.abs(diff) < 1000
-        ? 'Beide Routen sind im Schnitt gleich schnell.'
-        : `Über Risstissen bist du im Schnitt <b>${fmtDur(Math.abs(diff))} ${diff > 0 ? 'langsamer' : 'schneller'}</b>.`;
-    } else delta.hidden = true;
+    fillDelta($('#delta'), sR, sD, 'Über Risstissen', '');
+
+    const withVia = rides.filter(r => isVia(r.via));
+    $('#viaStats').hidden = !withVia.length;
+    if (!withVia.length) return;
+    const sB = stats(withVia.filter(r => r.via === 'b10'));
+    const sT = stats(withVia.filter(r => r.via === 'donautal'));
+    fillStat('B', sB); fillStat('T', sT);
+    fillDelta($('#deltaV'), sB, sT, 'Über die B 10', ' als durchs Donautal');
   }
   function renderList() {
     const list = $('#list');
@@ -526,10 +786,11 @@
       const b = document.createElement('button');
       b.className = 'ride ' + (r.risstissen ? 'r' : 'd'); b.dataset.id = r.id;
       b.innerHTML = `
-        <div><div class="rdate"></div><div class="rtime"></div></div>
-        <div class="rright"><div class="rdur"></div>${routeTag(r.risstissen)}</div>${ICON_CHEV}`;
+        <div><div class="rdate"></div><div class="rtime"></div>${isOrigin(r.from) ? '<div class="rdir"></div>' : ''}</div>
+        <div class="rright"><div class="rdur"></div>${routeTag(r.risstissen)}${viaTag(r.via)}</div>${ICON_CHEV}`;
       b.querySelector('.rdate').textContent = fmtDate(r.start);
       b.querySelector('.rtime').textContent = `${fmtClock(r.start)} – ${fmtClock(r.end)}`;
+      if (isOrigin(r.from)) b.querySelector('.rdir').textContent = dirName(r.from);
       b.querySelector('.rdur').textContent = fmtDur(r.end - r.start);
       b.addEventListener('click', () => openSheet(r.id));
       frag.appendChild(b);
@@ -543,16 +804,24 @@
     const r = rides.find(x => x.id === id); if (!r) return;
     sheetId = id;
     $('#sTitle').textContent = fmtDur(r.end - r.start);
-    $('#sSub').textContent = `${fmtDate(r.start)}, ${fmtClock(r.start)} – ${fmtClock(r.end)}`;
+    $('#sSub').textContent = `${fmtDate(r.start)}, ${fmtClock(r.start)} – ${fmtClock(r.end)}` +
+      (isOrigin(r.from) ? ` · ${dirName(r.from)}` : '');
     syncSeg(r);
     $('#sheet').classList.add('open');
   }
   function syncSeg(r) {
     document.querySelectorAll('#sSeg button').forEach(b => b.classList.toggle('on', (b.dataset.v === '1') === r.risstissen));
+    $('#sSegV').hidden = !(r.from === 'unterstadion' || isVia(r.via));
+    document.querySelectorAll('#sSegV button').forEach(b => b.classList.toggle('on', b.dataset.v === r.via));
   }
   document.querySelectorAll('#sSeg button').forEach(b => b.addEventListener('click', () => {
     const r = rides.find(x => x.id === sheetId); if (!r) return;
     r.risstissen = b.dataset.v === '1'; syncSeg(r); persist(); render();
+  }));
+  document.querySelectorAll('#sSegV button').forEach(b => b.addEventListener('click', () => {
+    const r = rides.find(x => x.id === sheetId); if (!r) return;
+    if (r.via === b.dataset.v) delete r.via; else r.via = b.dataset.v;   // tap again to clear
+    syncSeg(r); persist(); render();
   }));
   $('#sDel').addEventListener('click', () => {
     if (!confirm('Fahrt wirklich löschen?')) return;
@@ -590,18 +859,20 @@
 
   $('#csvBtn').addEventListener('click', () => {
     if (!rides.length) return toast('Noch keine Fahrten');
-    const rows = [['Datum', 'Start', 'Ende', 'Dauer', 'Dauer (min)', 'Route']];
+    const rows = [['Datum', 'Start', 'Ende', 'Dauer', 'Dauer (min)', 'Route', 'Richtung', 'Einfahrt Ulm']];
     for (const r of [...rides].reverse()) {
       rows.push([
         new Date(r.start).toLocaleDateString('de-DE'), fmtClock(r.start), fmtClock(r.end),
         fmtDur(r.end - r.start), ((r.end - r.start) / 60000).toFixed(1).replace('.', ','),
-        r.risstissen ? 'Über Risstissen' : 'Ohne Risstissen'
+        r.risstissen ? 'Über Risstissen' : 'Ohne Risstissen',
+        isOrigin(r.from) ? dirName(r.from) : '',
+        r.via === 'b10' ? 'B 10' : r.via === 'donautal' ? 'Donautal' : ''
       ]);
     }
     shareFile(`fahrzeiten-${stamp()}.csv`, '﻿' + rows.map(r => r.join(';')).join('\n'), 'text/csv');
   });
   $('#backupBtn').addEventListener('click', () => {
-    const data = { app: 'fahrzeit', version: 1, exported: new Date().toISOString(), rides };
+    const data = { app: 'fahrzeit', version: 2, exported: new Date().toISOString(), rides };
     shareFile(`fahrzeit-backup-${stamp()}.json`, JSON.stringify(data, null, 2), 'application/json');
   });
   $('#restoreBtn').addEventListener('click', () => $('#fileIn').click());
@@ -617,7 +888,10 @@
       for (const r of incoming) {
         const id = r.id || uid();
         if (known.has(id)) continue;
-        rides.push({ id, start: r.start, end: r.end, risstissen: r.risstissen }); known.add(id); added++;
+        const ride = { id, start: r.start, end: r.end, risstissen: r.risstissen };
+        if (isOrigin(r.from)) ride.from = r.from;
+        if (isVia(r.via)) ride.via = r.via;
+        rides.push(ride); known.add(id); added++;
       }
       rides.sort((a, b) => b.start - a.start);
       persist(); render();

@@ -1,5 +1,5 @@
 // Offline cache: serve instantly from cache, refresh in the background.
-const CACHE = 'fahrzeit-v2';
+const CACHE = 'fahrzeit-v3';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png',
   './fonts/barlow-500.woff2', './fonts/barlow-600.woff2', './fonts/barlow-700.woff2',
   './fonts/barlow-condensed-600.woff2', './fonts/barlow-condensed-700.woff2'];
