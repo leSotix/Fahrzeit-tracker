@@ -1,8 +1,9 @@
 // Offline cache: serve instantly from cache, refresh in the background.
-const CACHE = 'fahrzeit-v3';
+const CACHE = 'fahrzeit-v4';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png',
   './fonts/barlow-500.woff2', './fonts/barlow-600.woff2', './fonts/barlow-700.woff2',
-  './fonts/barlow-condensed-600.woff2', './fonts/barlow-condensed-700.woff2'];
+  './fonts/barlow-condensed-600.woff2', './fonts/barlow-condensed-700.woff2',
+  './vendor/leaflet/leaflet.js', './vendor/leaflet/leaflet.css'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
