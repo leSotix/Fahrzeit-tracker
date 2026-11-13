@@ -155,6 +155,7 @@
   .delta{margin:10px 2px 0;font-size:16px;color:var(--muted);text-wrap:pretty}
   .delta b{white-space:nowrap;color:var(--paint);font-weight:700}
   .cmp + .cmp{margin-top:18px}
+  .dirl{font-family:var(--display);font-weight:700;font-size:18px;line-height:1.15;overflow-wrap:anywhere}
 
   .list{background:var(--asphalt-2);border-radius:20px;overflow:hidden}
   .ride{
@@ -658,9 +659,18 @@
 
   const P = id => (id ? places.find(p => p.id === id) : undefined);
   const V = id => variants.find(v => v.id === id);
-  const routeKey = r => (P(r.from) && P(r.to) ? r.from + '>' + r.to : '?');
+  // A Strecke has no direction: Ulm → Unterstadion and Unterstadion → Ulm are the same Strecke.
+  const routeKey = r => (P(r.from) && P(r.to) ? [r.from, r.to].sort().join('|') : '?');
   const pname = id => (P(id) ? P(id).name : '?');
   const routeName = (f, t) => `${pname(f)} → ${pname(t)}`;
+  /** both ends of a Strecke, in the direction driven most often */
+  function routeEnds(k) {
+    const [a, b] = k.split('|');
+    let ab = 0, ba = 0;
+    for (const r of rides) { if (r.from === a && r.to === b) ab++; else if (r.from === b && r.to === a) ba++; }
+    return ab >= ba ? [a, b] : [b, a];
+  }
+  const routeTitle = k => { const [f, t] = routeEnds(k); return `${pname(f)} ↔ ${pname(t)}`; };
   const noLabel = v => v.no || `ohne ${v.name}`;
   const noTag = v => (v.no ? cap(v.no) : `Ohne ${v.name}`);
 
@@ -702,10 +712,13 @@
     return p.id;
   }
 
-  /** Destinations driven to from this place, most frequent first. */
+  /** Places this one is linked to by a Strecke (either direction), most frequent first. */
   function destinationsFrom(fid) {
     const n = new Map();
-    for (const r of rides) if (r.from === fid && P(r.to)) n.set(r.to, (n.get(r.to) || 0) + 1);
+    for (const r of rides) {
+      const other = r.from === fid ? r.to : r.to === fid ? r.from : null;
+      if (P(other) && other !== fid) n.set(other, (n.get(other) || 0) + 1);
+    }
     return [...n.entries()].sort((a, b) => b[1] - a[1]).map(e => e[0]);
   }
   /** Which Varianten make sense between start and destination(s): the via point may not be a big detour. */
@@ -1126,8 +1139,8 @@
       const b = document.createElement('button');
       const unk = g.k === '?';
       b.className = 'rc' + (unk ? ' unk' : '');
-      const [f, t] = unk ? [] : g.k.split('>');
-      b.innerHTML = `<div><div class="rc-n">${unk ? 'Ohne Strecke' : `${esc(pname(f))} <i>→</i> ${esc(pname(t))}`}</div>
+      const [f, t] = unk ? [] : routeEnds(g.k);
+      b.innerHTML = `<div><div class="rc-n">${unk ? 'Ohne Strecke' : `${esc(pname(f))} <i>↔</i> ${esc(pname(t))}`}</div>
         <div class="rc-m">${plural(g.s.n, 'Fahrt', 'Fahrten')} · ${unk ? 'antippen zum Zuordnen' : `Bestzeit ${fmtDur(g.s.min)}`}</div></div>
         <div class="rc-a"><small>Ø</small>${fmtDur(g.s.avg)}</div>${ICON_CHEV}`;
       b.addEventListener('click', () => openRoute(g.k));
@@ -1183,16 +1196,24 @@
     const list = rides.filter(r => routeKey(r) === routeOpen);
     if (!list.length) return closeRoute();
     const unk = routeOpen === '?';
-    const [f, t] = unk ? [] : routeOpen.split('>');
-    $('#rpTitle').textContent = unk ? 'Ohne Strecke' : routeName(f, t);
+    const [f, t] = unk ? [] : routeEnds(routeOpen);
+    $('#rpTitle').textContent = unk ? 'Ohne Strecke' : routeTitle(routeOpen);
     const body = $('#rpBody');
     let html = '';
     if (unk) {
       html += `<p class="note" style="margin:8px 2px 0">Diesen Fahrten fehlt Start oder Ziel – zum Beispiel weil der Standort aus war. Tippe eine Fahrt an und wähle die Strecke.</p>`;
     } else {
       html += `<h3>Fahrzeit</h3><div class="stats one">${statHTML('', stats(list))}</div>
-        <div class="places"><button class="pbtn" data-place="${esc(f)}"><span>Start</span><b>${esc(pname(f))}</b></button>
-        <button class="pbtn" data-place="${esc(t)}"><span>Ziel</span><b>${esc(pname(t))}</b></button></div>`;
+        <div class="places"><button class="pbtn" data-place="${esc(f)}"><span>Ort</span><b>${esc(pname(f))}</b></button>
+        <button class="pbtn" data-place="${esc(t)}"><span>Ort</span><b>${esc(pname(t))}</b></button></div>`;
+      // both directions side by side, when both have been driven
+      const sTo = stats(list.filter(r => r.from === f)), sBack = stats(list.filter(r => r.from === t));
+      if (sTo && sBack && f !== t) {
+        const diff = sTo.avg - sBack.avg;
+        html += `<h3>Richtungen</h3><div class="stats">${statHTML(`<div class="dirl">${esc(routeName(f, t))}</div>`, sTo)}${statHTML(`<div class="dirl">${esc(routeName(t, f))}</div>`, sBack)}</div>
+          <div class="delta">${Math.abs(diff) < 1000 ? 'Beide Richtungen dauern im Schnitt gleich lang.'
+            : `Nach ${esc(pname(diff > 0 ? f : t))} brauchst du im Schnitt <b>${fmtDur(Math.abs(diff))} länger</b>.`}</div>`;
+      }
       const vs = variants.filter(v => list.some(r => r.a[v.id] !== undefined));
       if (vs.length) {
         html += '<h3>Varianten</h3>';
@@ -1251,16 +1272,25 @@
     // quick picks: the routes you drive most
     const chips = $('#rsRoutes');
     chips.textContent = '';
-    const known = routeGroups().filter(g => g.k !== '?').slice(0, 6);
+    const known = routeGroups().filter(g => g.k !== '?').slice(0, 3);
     for (const g of known) {
-      const [f, t] = g.k.split('>');
+      const [a, b] = routeEnds(g.k);
+      for (const [f, t] of a === b ? [[a, b]] : [[a, b], [b, a]]) {   // a Strecke in both directions
+        const c = document.createElement('button');
+        c.className = 'chip' + (r.from === f && r.to === t ? ' on' : '');
+        c.textContent = routeName(f, t);
+        c.addEventListener('click', () => { r.from = f; r.to = t; persist(); render(); renderRideSheet(); });
+        chips.appendChild(c);
+      }
+    }
+    if (P(r.from) && P(r.to) && r.from !== r.to) {
       const c = document.createElement('button');
-      c.className = 'chip' + (routeKey(r) === g.k ? ' on' : '');
-      c.textContent = routeName(f, t);
-      c.addEventListener('click', () => { r.from = f; r.to = t; persist(); render(); renderRideSheet(); });
+      c.className = 'chip';
+      c.textContent = '⇄ Richtung tauschen';
+      c.addEventListener('click', () => { [r.from, r.to] = [r.to, r.from]; persist(); render(); renderRideSheet(); });
       chips.appendChild(c);
     }
-    chips.hidden = !known.length;
+    chips.hidden = !chips.children.length;
     placeOptions($('#rsFrom'), r.from);
     placeOptions($('#rsTo'), r.to);
 
